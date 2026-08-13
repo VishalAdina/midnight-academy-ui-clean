@@ -1,3 +1,4 @@
+import { requireAuth } from "@/lib/auth-guard";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -9,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { sampleResult, sampleTest, scoreTextClass, testQuestions } from "@/lib/mock-data";
 
 export const Route = createFileRoute("/result/$attemptId")({
+  beforeLoad: ({ location }) => requireAuth({ role: "STUDENT", location }),
   head: () => ({
     meta: [
       { title: "Test Result — Midnight Academy" },

@@ -1,5 +1,6 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import { Bell, ChevronDown, LogOut, Settings, User } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
 import { Wordmark } from "@/components/brand";
 import {
   DropdownMenu,
@@ -58,6 +59,9 @@ function NavLinks({ items }: { items: NavItem[] }) {
 }
 
 function ProfileMenu({ admin }: { admin?: boolean | undefined }) {
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger className="flex items-center gap-2 rounded-lg border border-border bg-surface px-2 py-1.5 text-left transition-colors hover:border-border-strong">
@@ -88,10 +92,11 @@ function ProfileMenu({ admin }: { admin?: boolean | undefined }) {
             </DropdownMenuItem>
           </>
         )}
-        <DropdownMenuItem asChild>
-          <Link to="/auth">
-            <LogOut className="size-4" /> Sign out
-          </Link>
+        <DropdownMenuItem onClick={async () => {
+          await signOut();
+          navigate({ to: "/auth" });
+        }}>
+          <LogOut className="mr-2 size-4" /> Sign out
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

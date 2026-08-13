@@ -10,7 +10,10 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 
+import { requireUnauth } from "@/lib/auth-guard";
+
 export const Route = createFileRoute("/auth")({
+  beforeLoad: ({ location }) => requireUnauth({ location }),
   head: () => ({
     meta: [
       { title: "Sign in — Midnight Academy" },
@@ -81,8 +84,7 @@ function AuthPage() {
   };
 
   const handleGoogleLogin = () => {
-    const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
-    window.location.href = `${apiUrl}/auth/google`;
+    window.location.href = `${import.meta.env['VITE_API_URL'] || "http://localhost:3000"}/auth/google`;
   };
 
   return (

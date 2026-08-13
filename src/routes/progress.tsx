@@ -1,3 +1,4 @@
+import { requireAuth } from "@/lib/auth-guard";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
 import { AppNav } from "@/components/app-nav";
@@ -16,6 +17,7 @@ import {
 } from "@/lib/mock-data";
 
 export const Route = createFileRoute("/progress")({
+  beforeLoad: ({ location }) => requireAuth({ role: "STUDENT", location }),
   head: () => ({
     meta: [
       { title: "Progress & Analytics — Midnight Academy" },

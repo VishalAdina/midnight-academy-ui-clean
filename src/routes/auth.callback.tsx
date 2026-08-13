@@ -34,14 +34,6 @@ function AuthCallbackPage() {
         // rely on res.user since the backend returns it).
         // Let's redirect based on role:
         const returnedRole = res?.user?.role;
-        if (returnedRole === "ADMIN") {
-          navigate({ to: "/admin" });
-        } else {
-          navigate({ to: "/onboarding" }); // Default for students
-        }
-        
-        // Small reload might be required for the useAuth context to pick up the new tokens instantly 
-        // if it doesn't have a way to manually inject the user. Alternatively, `window.location.href = ...`
         window.location.href = returnedRole === "ADMIN" ? "/admin" : "/onboarding";
       } catch (err: any) {
         setError(err.message || "Failed to exchange code");

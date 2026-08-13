@@ -1,3 +1,4 @@
+import { requireAuth } from "@/lib/auth-guard";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, Lightbulb, Play, Sparkles } from "lucide-react";
 import { AppNav } from "@/components/app-nav";
@@ -26,6 +27,7 @@ import {
 } from "@/lib/mock-data";
 
 export const Route = createFileRoute("/dashboard")({
+  beforeLoad: ({ location }) => requireAuth({ role: "STUDENT", location }),
   head: () => ({
     meta: [
       { title: "Dashboard — Midnight Academy" },

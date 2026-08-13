@@ -1,3 +1,4 @@
+import { requireAuth } from "@/lib/auth-guard";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -17,6 +18,7 @@ import {
 import { studentProfile } from "@/lib/mock-data";
 
 export const Route = createFileRoute("/profile")({
+  beforeLoad: ({ location }) => requireAuth({ role: "STUDENT", location }),
   head: () => ({
     meta: [
       { title: "Profile & Settings — Midnight Academy" },

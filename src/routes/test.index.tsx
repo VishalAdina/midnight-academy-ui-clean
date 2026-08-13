@@ -1,3 +1,4 @@
+import { requireAuth } from "@/lib/auth-guard";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { AlertTriangle, ArrowRight, CalendarClock, CheckCircle2, Info } from "lucide-react";
@@ -8,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { sampleTest, testQuestions } from "@/lib/mock-data";
 
 export const Route = createFileRoute("/test/")({
+  beforeLoad: ({ location }) => requireAuth({ role: "STUDENT", location }),
   head: () => ({
     meta: [
       { title: "Enter Your Test — Midnight Academy" },

@@ -1,3 +1,4 @@
+import { requireAuth } from "@/lib/auth-guard";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Clock, Search } from "lucide-react";
@@ -14,6 +15,7 @@ import {
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/practice")({
+  beforeLoad: ({ location }) => requireAuth({ role: "STUDENT", location }),
   head: () => ({
     meta: [
       { title: "Practice Library — Midnight Academy" },

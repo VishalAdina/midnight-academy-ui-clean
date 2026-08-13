@@ -1,3 +1,4 @@
+import { requireAuth } from "@/lib/auth-guard";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { ArrowUpDown, History as HistoryIcon } from "lucide-react";
@@ -14,6 +15,7 @@ import {
 import { attempts, CATEGORIES, formatDate, scoreTextClass } from "@/lib/mock-data";
 
 export const Route = createFileRoute("/history")({
+  beforeLoad: ({ location }) => requireAuth({ role: "STUDENT", location }),
   head: () => ({
     meta: [
       { title: "Attempt History — Midnight Academy" },
