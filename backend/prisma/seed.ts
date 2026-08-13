@@ -1,5 +1,6 @@
 import { PrismaClient, Role } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
+import { hashPassword } from '../src/common/utils/password.util';
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
 const prisma = new PrismaClient({ adapter });
@@ -7,31 +8,36 @@ const prisma = new PrismaClient({ adapter });
 async function main() {
   console.log('Seeding database...');
 
+  const adminPassword = await hashPassword('admin123');
+  const studentPassword = await hashPassword('student123');
+
   // Create admin user
   const admin = await prisma.user.upsert({
     where: { email: 'admin@midnightacademy.local' },
-    update: {},
+    update: {
+      passwordHash: adminPassword,
+    },
     create: {
       email: 'admin@midnightacademy.local',
       role: Role.ADMIN,
       fullName: 'Admin User',
-      // TEMPORARY: Plaintext password placeholder for Phase 2. To be replaced in Phase 3.
-      passwordHash: 'password',
+      passwordHash: adminPassword,
     },
   });
 
   // Create student user
   const student = await prisma.user.upsert({
     where: { email: 'student@midnightacademy.local' },
-    update: {},
+    update: {
+      passwordHash: studentPassword,
+    },
     create: {
       email: 'student@midnightacademy.local',
       role: Role.STUDENT,
       fullName: 'Student User',
       institution: 'Midnight Academy',
       year: 'Senior',
-      // TEMPORARY: Plaintext password placeholder for Phase 2. To be replaced in Phase 3.
-      passwordHash: 'password',
+      passwordHash: studentPassword,
     },
   });
 
