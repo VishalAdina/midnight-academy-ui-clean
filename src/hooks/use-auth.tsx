@@ -1,15 +1,23 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import type { Session, User } from "@supabase/supabase-js";
-import { supabase } from "@/integrations/supabase/client";
+import { apiClient, setAccessToken } from "@/lib/api-client";
 
-export type AppRole = "admin" | "student";
+export type AppRole = "ADMIN" | "STUDENT";
+
+type User = {
+  id: string;
+  email: string;
+  fullName: string | null;
+  role: AppRole;
+};
 
 type AuthState = {
-  session: Session | null;
+  session: { user: User } | null;
   user: User | null;
   role: AppRole | null;
   loading: boolean;
   signOut: () => Promise<void>;
+  login: (data: any) => Promise<any>;
+  register: (data: any) => Promise<any>;
 };
 
 const AuthContext = createContext<AuthState>({
@@ -18,57 +26,105 @@ const AuthContext = createContext<AuthState>({
   role: null,
   loading: true,
   signOut: async () => {},
+  login: async () => {},
+  register: async () => {},
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [session, setSession] = useState<Session | null>(null);
-  const [role, setRole] = useState<AppRole | null>(null);
+  const [session, setSession] = useState<{ user: User } | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const { data: subscription } = supabase.auth.onAuthStateChange((_event, next) => {
-      setSession(next);
+  // Storage decision: We keep accessToken purely in memory (via setAccessToken)
+  // to avoid XSS exfiltration risks. We only persist the refreshToken in localStorage
+  // for silent session restoration across reloads.
+  
+  const restoreSession = async () => {
+    const refreshToken = localStorage.getItem("refreshToken");
+    if (!refreshToken) {
       setLoading(false);
-    });
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setLoading(false);
-    });
-    return () => subscription.subscription.unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    const userId = session?.user.id;
-    if (!userId) {
-      setRole(null);
       return;
     }
-    let active = true;
-    supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userId)
-      .then(({ data }) => {
-        if (!active) return;
-        const roles = (data ?? []).map((r) => r.role);
-        setRole(roles.includes("admin") ? "admin" : roles.length ? "student" : null);
+    
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/auth/refresh`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refreshToken }),
       });
-    return () => {
-      active = false;
-    };
-  }, [session?.user.id]);
+      
+      if (response.ok) {
+        const data = await response.json();
+        setAccessToken(data.accessToken);
+        localStorage.setItem("refreshToken", data.refreshToken);
+        
+        const user = await apiClient("/auth/me");
+        setSession({ user });
+      } else {
+        localStorage.removeItem("refreshToken");
+        setSession(null);
+      }
+    } catch (error) {
+      localStorage.removeItem("refreshToken");
+      setSession(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    restoreSession();
+  }, []);
+
+  const login = async (data: any) => {
+    const res = await apiClient("/auth/login", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    setAccessToken(res.accessToken);
+    localStorage.setItem("refreshToken", res.refreshToken);
+    setSession({ user: res.user });
+    return res;
+  };
+
+  const register = async (data: any) => {
+    const res = await apiClient("/auth/register", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    setAccessToken(res.accessToken);
+    localStorage.setItem("refreshToken", res.refreshToken);
+    setSession({ user: res.user });
+    return res;
+  };
+
+  const signOut = async () => {
+    const refreshToken = localStorage.getItem("refreshToken");
+    if (refreshToken) {
+      try {
+        await apiClient("/auth/logout", {
+          method: "POST",
+          body: JSON.stringify({ refreshToken }),
+        });
+      } catch (error) {
+        // Ignore failure on logout
+      }
+    }
+    setAccessToken(null);
+    localStorage.removeItem("refreshToken");
+    setSession(null);
+  };
 
   const value = useMemo<AuthState>(
     () => ({
       session,
       user: session?.user ?? null,
-      role,
+      role: session?.user?.role ?? null,
       loading,
-      signOut: async () => {
-        await supabase.auth.signOut();
-      },
+      signOut,
+      login,
+      register,
     }),
-    [session, role, loading],
+    [session, loading],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
