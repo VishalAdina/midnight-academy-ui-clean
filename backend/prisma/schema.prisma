@@ -149,4 +149,5 @@ model AttemptAnswer {
 
   @@index([attemptId])
   @@index([questionId])
+  @@unique([attemptId, questionId])
 }
