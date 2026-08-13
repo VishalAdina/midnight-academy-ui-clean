@@ -89,4 +89,58 @@ export class TokenService {
       });
     }
   }
+
+  async generateExchangeCode(userId: string): Promise<string> {
+    const code = crypto.randomBytes(32).toString('hex');
+    const codeHash = this.hashToken(code);
+    const expiresAt = new Date(Date.now() + 60 * 1000); // 60 seconds
+
+    await this.prisma.oAuthExchangeCode.create({
+      data: {
+        userId,
+        codeHash,
+        expiresAt,
+      },
+    });
+
+    return code;
+  }
+
+  async exchangeCode(code: string) {
+    const codeHash = this.hashToken(code);
+
+    const exchangeRecord = await this.prisma.oAuthExchangeCode.findUnique({
+      where: { codeHash },
+      include: { user: true },
+    });
+
+    if (
+      !exchangeRecord ||
+      exchangeRecord.usedAt ||
+      exchangeRecord.expiresAt < new Date()
+    ) {
+      throw new UnauthorizedException('Invalid or expired exchange code');
+    }
+
+    // Mark as used
+    await this.prisma.oAuthExchangeCode.update({
+      where: { id: exchangeRecord.id },
+      data: { usedAt: new Date() },
+    });
+
+    const tokens = await this.generateTokens(
+      exchangeRecord.userId,
+      exchangeRecord.user.role,
+    );
+
+    return {
+      user: {
+        id: exchangeRecord.user.id,
+        email: exchangeRecord.user.email,
+        fullName: exchangeRecord.user.fullName,
+        role: exchangeRecord.user.role,
+      },
+      ...tokens,
+    };
+  }
 }
