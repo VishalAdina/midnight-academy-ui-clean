@@ -14,6 +14,9 @@ type AuthState = {
   loading: boolean;
 };
 
+// SSR-safe initial state: on the server there is never a session
+const SERVER_SNAPSHOT: AuthState = { user: null, loading: false };
+
 let state: AuthState = { user: null, loading: true };
 let listeners: (() => void)[] = [];
 let restorePromise: Promise<void> | null = null;
@@ -29,33 +32,39 @@ function updateState(newState: Partial<AuthState>) {
   notify();
 }
 
+function safeLocalStorage() {
+  if (typeof window === "undefined") return null;
+  return window.localStorage;
+}
+
 async function doRestoreSession(): Promise<void> {
-  const refreshToken = localStorage.getItem("refreshToken");
+  const ls = safeLocalStorage();
+  const refreshToken = ls?.getItem("refreshToken");
   if (!refreshToken) {
     updateState({ user: null, loading: false });
     return;
   }
-  
+
   try {
     const response = await fetch(`${import.meta.env['VITE_API_URL'] || "http://localhost:3000"}/auth/refresh`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refreshToken }),
     });
-    
+
     if (response.ok) {
       const data = await response.json();
       setAccessToken(data.accessToken);
-      localStorage.setItem("refreshToken", data.refreshToken);
-      
+      ls?.setItem("refreshToken", data.refreshToken);
+
       const user = await apiClient("/auth/me");
       updateState({ user, loading: false });
     } else {
-      localStorage.removeItem("refreshToken");
+      ls?.removeItem("refreshToken");
       updateState({ user: null, loading: false });
     }
   } catch (error) {
-    localStorage.removeItem("refreshToken");
+    ls?.removeItem("refreshToken");
     updateState({ user: null, loading: false });
   }
 }
@@ -67,20 +76,29 @@ export const authStore = {
       listeners = listeners.filter((l) => l !== listener);
     };
   },
-  
+
+  // Client snapshot — returns live mutable state
   getSnapshot() {
     return state;
+  },
+
+  // Server snapshot — SSR always renders as unauthenticated/not-loading
+  // (session restore runs client-side only via getRestorePromise)
+  getServerSnapshot() {
+    return SERVER_SNAPSHOT;
   },
 
   getUser() {
     return state.user;
   },
-  
+
   getRole() {
     return state.user?.role ?? null;
   },
 
   getRestorePromise() {
+    // Only run on the client — server has no localStorage
+    if (typeof window === "undefined") return Promise.resolve();
     if (!restorePromise) {
       restorePromise = doRestoreSession();
     }
@@ -93,7 +111,7 @@ export const authStore = {
       body: JSON.stringify(data),
     });
     setAccessToken(res.accessToken);
-    localStorage.setItem("refreshToken", res.refreshToken);
+    safeLocalStorage()?.setItem("refreshToken", res.refreshToken);
     updateState({ user: res.user });
     return res;
   },
@@ -104,13 +122,14 @@ export const authStore = {
       body: JSON.stringify(data),
     });
     setAccessToken(res.accessToken);
-    localStorage.setItem("refreshToken", res.refreshToken);
+    safeLocalStorage()?.setItem("refreshToken", res.refreshToken);
     updateState({ user: res.user });
     return res;
   },
 
   async signOut() {
-    const refreshToken = localStorage.getItem("refreshToken");
+    const ls = safeLocalStorage();
+    const refreshToken = ls?.getItem("refreshToken");
     if (refreshToken) {
       try {
         await apiClient("/auth/logout", {
@@ -122,7 +141,7 @@ export const authStore = {
       }
     }
     setAccessToken(null);
-    localStorage.removeItem("refreshToken");
+    ls?.removeItem("refreshToken");
     updateState({ user: null });
   },
 };

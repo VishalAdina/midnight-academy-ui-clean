@@ -22,7 +22,11 @@ const AuthContext = createContext<AuthState>({
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const storeState = useSyncExternalStore(authStore.subscribe, authStore.getSnapshot);
+  const storeState = useSyncExternalStore(
+    authStore.subscribe,
+    authStore.getSnapshot,
+    authStore.getServerSnapshot,
+  );
 
   useEffect(() => {
     // Initiate session restoration as early as possible in React lifecycle
