@@ -17,9 +17,17 @@ export class UsersService {
     });
   }
 
+  async findById(id: string): Promise<User | null> {
+    return this.prisma.user.findUnique({
+      where: { id },
+    });
+  }
+
   async findOrCreateByGoogle(profile: any) {
     const emailObj = profile.emails?.[0];
-    if (!emailObj || !emailObj.verified) {
+    const emailVerified = profile._json?.email_verified === true;
+
+    if (!emailObj || !emailVerified) {
       throw new Error('Unverified email from Google');
     }
 
