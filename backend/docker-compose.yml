@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: midnight-academy-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: midnight_academy
+    ports:
+      - '5435:5432'
+    volumes:
+      - midnight_academy_pg_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  midnight_academy_pg_data:

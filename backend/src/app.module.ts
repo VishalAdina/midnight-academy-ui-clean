@@ -10,6 +10,7 @@ import { QuestionsModule } from './questions/questions.module';
 import { AttemptsModule } from './attempts/attempts.module';
 import { AdminModule } from './admin/admin.module';
 import { HealthModule } from './health/health.module';
+import { PrismaModule } from './common/prisma/prisma.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { HealthModule } from './health/health.module';
     AttemptsModule,
     AdminModule,
     HealthModule,
+    PrismaModule,
   ],
   controllers: [AppController],
   providers: [AppService],

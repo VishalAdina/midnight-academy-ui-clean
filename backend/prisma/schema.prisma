@@ -1,0 +1,152 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  STUDENT
+  ADMIN
+}
+
+enum TestStatus {
+  DRAFT
+  ACTIVE
+  COMPLETED
+}
+
+enum AttemptStatus {
+  IN_PROGRESS
+  EVALUATING
+  EVALUATED
+}
+
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String?
+  role         Role      @default(STUDENT)
+  fullName     String?
+  institution  String?
+  year         String?
+  onboarded    Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  oauthAccounts OAuthAccount[]
+  refreshTokens RefreshToken[]
+  tests         Test[]
+  attempts      Attempt[]
+}
+
+model OAuthAccount {
+  id                String   @id @default(uuid())
+  userId            String
+  provider          String
+  providerAccountId String
+  createdAt         DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model RefreshToken {
+  id         String    @id @default(uuid())
+  userId     String
+  tokenHash  String
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Test {
+  id                 String     @id @default(uuid())
+  ownerId            String
+  name               String
+  category           String
+  difficulty         String
+  questionCount      Int
+  secondsPerQuestion Int
+  responseSeconds    Int
+  status             TestStatus @default(DRAFT)
+  code               String     @unique
+  expiresAt          DateTime?
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+
+  owner     User       @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  questions Question[]
+  attempts  Attempt[]
+
+  @@index([ownerId])
+}
+
+model Question {
+  id              String   @id @default(uuid())
+  testId          String
+  position        Int
+  text            String
+  category        String
+  topic           String
+  difficulty      String
+  concepts        String[]
+  constraints     String[]
+  referenceAnswer String
+  approved        Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  test           Test            @relation(fields: [testId], references: [id], onDelete: Cascade)
+  attemptAnswers AttemptAnswer[]
+
+  @@index([testId])
+}
+
+model Attempt {
+  id         String        @id @default(uuid())
+  testId     String
+  studentId  String
+  status     AttemptStatus @default(IN_PROGRESS)
+  score      Float?
+  axes       Json?
+  blurCount  Int           @default(0)
+  startedAt  DateTime      @default(now())
+  completedAt DateTime?
+  updatedAt  DateTime      @updatedAt
+
+  test           Test            @relation(fields: [testId], references: [id], onDelete: Restrict)
+  student        User            @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  attemptAnswers AttemptAnswer[]
+
+  @@index([testId])
+  @@index([studentId])
+}
+
+model AttemptAnswer {
+  id                String    @id @default(uuid())
+  attemptId         String
+  questionId        String
+  position          Int
+  response          String
+  score             Float?
+  feedback          String?
+  missedConcepts    String[]
+  missedConstraints String[]
+  flagged           Boolean   @default(false)
+  revealedAt        DateTime?
+  submittedAt       DateTime?
+
+  attempt  Attempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id], onDelete: Restrict)
+
+  @@index([attemptId])
+  @@index([questionId])
+}
