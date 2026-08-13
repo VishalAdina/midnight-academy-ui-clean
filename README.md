@@ -1,8 +1,8 @@
 # Midnight Academy UI
 
-# MIDNIGHT ACADEMY — Master Lovable Build Prompt
+# MIDNIGHT ACADEMY — Product Specification
 
-Paste this whole document into Lovable as your build prompt. It merges the original spec with the additions needed to make the product feel complete (marked **[NEW]**).
+This document outlines the product specification for Midnight Academy.
 
 ---
 
@@ -274,19 +274,9 @@ Page transitions, button hover states, timer progression, progress bar animation
 
 ---
 
-## BUILD NOTE FOR LOVABLE
+## ARCHITECTURE NOTES
 
 Build this as one cohesive product under a shared design system (color tokens, typography scale, spacing scale, and the shared 5-axis comprehension component) rather than as loosely related screens. Student-facing and admin-facing areas should feel like the same product, not two different apps.
-
-This project was built with [Lovable](https://lovable.dev).
-
-## Build with Lovable
-
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/085b37e6-d03a-433f-bf3b-41e2131d980b).
-
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
 
 ## Development
 
