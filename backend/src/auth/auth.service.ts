@@ -8,10 +8,14 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { hashPassword, comparePasswords } from '../common/utils/password.util';
 import { Role, Prisma } from '@prisma/client';
+import { TokenService } from './token.service';
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly tokenService: TokenService,
+  ) {}
 
   async register(dto: RegisterDto) {
     try {
@@ -24,12 +28,17 @@ export class AuthService {
         role: Role.STUDENT,
       });
 
+      const tokens = await this.tokenService.generateTokens(user.id, user.role);
+
       return {
-        id: user.id,
-        email: user.email,
-        fullName: user.fullName,
-        role: user.role,
-        createdAt: user.createdAt,
+        user: {
+          id: user.id,
+          email: user.email,
+          fullName: user.fullName,
+          role: user.role,
+          createdAt: user.createdAt,
+        },
+        ...tokens,
       };
     } catch (error: unknown) {
       if (
@@ -57,11 +66,16 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    const tokens = await this.tokenService.generateTokens(user.id, user.role);
+
     return {
-      id: user.id,
-      email: user.email,
-      fullName: user.fullName,
-      role: user.role,
+      user: {
+        id: user.id,
+        email: user.email,
+        fullName: user.fullName,
+        role: user.role,
+      },
+      ...tokens,
     };
   }
 }
