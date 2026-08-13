@@ -87,17 +87,9 @@ export class AuthController {
     const frontendUrl = this.configService.get<string>('FRONTEND_URL');
     try {
       const user = req.user as any;
-      if (!user) {
-        return res.redirect(
-          `${frontendUrl}/auth/error?message=Authentication failed`,
-        );
-      }
-
-      const exchangeCode = await this.tokenService.generateExchangeCode(
-        user.id,
-      );
+      const exchangeCode = await this.tokenService.generateExchangeCode(user.id);
       return res.redirect(`${frontendUrl}/auth/callback?code=${exchangeCode}`);
-    } catch (error) {
+    } catch {
       return res.redirect(
         `${frontendUrl}/auth/error?message=Authentication failed`,
       );
